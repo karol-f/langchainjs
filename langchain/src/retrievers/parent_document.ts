@@ -162,9 +162,15 @@ export class ParentDocumentRetriever extends MultiVectorRetriever {
       addToDocstore = true,
       childDocChunkHeaderOptions = {},
     } = config ?? {};
-    const parentDocs = this.parentSplitter
-      ? await this.parentSplitter.splitDocuments(docs)
-      : docs;
+    let parentDocs = docs;
+    let parentDocsNoHeader = docs;
+    if (this.parentSplitter) {
+      parentDocs = await this.parentSplitter.splitDocuments(
+        docs,
+        childDocChunkHeaderOptions
+      );
+      parentDocsNoHeader = await this.parentSplitter.splitDocuments(docs);
+    }
     let parentDocIds;
     if (ids === undefined) {
       if (!addToDocstore) {
@@ -185,9 +191,10 @@ export class ParentDocumentRetriever extends MultiVectorRetriever {
     const fullDocs: Record<string, Document> = {};
     for (let i = 0; i < parentDocs.length; i += 1) {
       const parentDoc = parentDocs[i];
+      const parentDocNoHeader = parentDocsNoHeader[i];
       const parentDocId = parentDocIds[i];
       const subDocs = await this.childSplitter.splitDocuments(
-        [parentDoc],
+        [parentDocNoHeader],
         childDocChunkHeaderOptions
       );
       const taggedSubDocs = subDocs.map(
